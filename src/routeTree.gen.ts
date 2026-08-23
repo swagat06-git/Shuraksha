@@ -10,33 +10,43 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicTwilioIncomingRouteImport } from './routes/api/public/twilio/incoming'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicTwilioIncomingRoute = ApiPublicTwilioIncomingRouteImport.update({
+  id: '/api/public/twilio/incoming',
+  path: '/api/public/twilio/incoming',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/public/twilio/incoming': typeof ApiPublicTwilioIncomingRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/public/twilio/incoming': typeof ApiPublicTwilioIncomingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/public/twilio/incoming': typeof ApiPublicTwilioIncomingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/api/public/twilio/incoming'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/api/public/twilio/incoming'
+  id: '__root__' | '/' | '/api/public/twilio/incoming'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiPublicTwilioIncomingRoute: typeof ApiPublicTwilioIncomingRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +58,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/twilio/incoming': {
+      id: '/api/public/twilio/incoming'
+      path: '/api/public/twilio/incoming'
+      fullPath: '/api/public/twilio/incoming'
+      preLoaderRoute: typeof ApiPublicTwilioIncomingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiPublicTwilioIncomingRoute: ApiPublicTwilioIncomingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
