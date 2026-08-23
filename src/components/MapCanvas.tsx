@@ -39,6 +39,20 @@ function ClickHandler({ onPick }: { onPick: (p: GeoPoint) => void }) {
   return null;
 }
 
+function SizeFix() {
+  const map = useMap();
+  useEffect(() => {
+    const fix = () => map.invalidateSize();
+    const t = window.setTimeout(fix, 120);
+    window.addEventListener("resize", fix);
+    return () => {
+      window.clearTimeout(t);
+      window.removeEventListener("resize", fix);
+    };
+  }, [map]);
+  return null;
+}
+
 function Recenter({ point }: { point: GeoPoint | null }) {
   const map = useMap();
   useEffect(() => {
