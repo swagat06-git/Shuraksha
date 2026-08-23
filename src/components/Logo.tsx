@@ -1,4 +1,4 @@
-import logoAsset from "@/assets/shuraksha-logo.png.asset.json";
+import shieldAsset from "@/assets/shuraksha-shield.png.asset.json";
 import { cn } from "@/lib/utils";
 
 export function Logo({
@@ -10,19 +10,19 @@ export function Logo({
 }) {
   return (
     <span className={cn("flex items-center gap-2.5", className)}>
-      <span className="relative block size-9 shrink-0 overflow-hidden rounded-lg">
-        <img
-          src={logoAsset.url}
-          alt="Shuraksha logo"
-          className="absolute left-1/2 top-1/2 h-auto w-[420%] max-w-none -translate-x-1/2 -translate-y-[41%]"
-        />
-      </span>
+      <img
+        src={shieldAsset.url}
+        alt="Shuraksha shield logo"
+        className="size-10 shrink-0 object-contain"
+        width={40}
+        height={40}
+      />
       <span className="leading-none">
         <span className="block font-display text-lg font-bold tracking-tight text-navy dark:text-foreground">
           SHURAKSHA
         </span>
         {showTagline ? (
-          <span className="mt-0.5 block text-[10px] font-semibold tracking-[0.18em] text-primary">
+          <span className="mt-1 block text-[10px] font-semibold tracking-[0.18em] text-primary">
             PREPARE · ACT · RECOVER
           </span>
         ) : null}
