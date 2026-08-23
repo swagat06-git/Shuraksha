@@ -10,13 +10,13 @@ export function Logo({
 }) {
   return (
     <span className={cn("flex items-center gap-2.5", className)}>
-      <img
-        src={logoAsset.url}
-        alt="Shuraksha logo"
-        className="h-9 w-9 shrink-0 object-cover object-[52%_28%] scale-[2.6] [clip-path:circle(48%)]"
-        width={36}
-        height={36}
-      />
+      <span className="relative block size-9 shrink-0 overflow-hidden rounded-lg">
+        <img
+          src={logoAsset.url}
+          alt="Shuraksha logo"
+          className="absolute left-1/2 top-1/2 h-auto w-[340%] max-w-none -translate-x-1/2 -translate-y-[46%]"
+        />
+      </span>
       <span className="leading-none">
         <span className="block font-display text-lg font-bold tracking-tight text-navy dark:text-foreground">
           SHURAKSHA
