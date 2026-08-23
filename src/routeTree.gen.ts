@@ -10,14 +10,28 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthorityRouteImport } from './routes/authority'
+import { Route as CitizenRouteImport } from './routes/citizen'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as MyReportsRouteImport } from './routes/my-reports'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as ReportRouteImport } from './routes/report'
 import { Route as ApiPublicTwilioIncomingRouteImport } from './routes/api/public/twilio/incoming'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthorityRoute = AuthorityRouteImport.update({
+  id: '/authority',
+  path: '/authority',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CitizenRoute = CitizenRouteImport.update({
+  id: '/citizen',
+  path: '/citizen',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
@@ -30,9 +44,19 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MyReportsRoute = MyReportsRouteImport.update({
+  id: '/my-reports',
+  path: '/my-reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportRoute = ReportRouteImport.update({
+  id: '/report',
+  path: '/report',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicTwilioIncomingRoute = ApiPublicTwilioIncomingRouteImport.update({
@@ -43,55 +67,83 @@ const ApiPublicTwilioIncomingRoute = ApiPublicTwilioIncomingRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/authority': typeof AuthorityRoute
+  '/citizen': typeof CitizenRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/my-reports': typeof MyReportsRoute
   '/register': typeof RegisterRoute
+  '/report': typeof ReportRoute
   '/api/public/twilio/incoming': typeof ApiPublicTwilioIncomingRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/authority': typeof AuthorityRoute
+  '/citizen': typeof CitizenRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/my-reports': typeof MyReportsRoute
   '/register': typeof RegisterRoute
+  '/report': typeof ReportRoute
   '/api/public/twilio/incoming': typeof ApiPublicTwilioIncomingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/authority': typeof AuthorityRoute
+  '/citizen': typeof CitizenRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/my-reports': typeof MyReportsRoute
   '/register': typeof RegisterRoute
+  '/report': typeof ReportRoute
   '/api/public/twilio/incoming': typeof ApiPublicTwilioIncomingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/authority'
+    | '/citizen'
     | '/forgot-password'
     | '/login'
+    | '/my-reports'
     | '/register'
+    | '/report'
     | '/api/public/twilio/incoming'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/authority'
+    | '/citizen'
     | '/forgot-password'
     | '/login'
+    | '/my-reports'
     | '/register'
+    | '/report'
     | '/api/public/twilio/incoming'
   id:
     | '__root__'
     | '/'
+    | '/authority'
+    | '/citizen'
     | '/forgot-password'
     | '/login'
+    | '/my-reports'
     | '/register'
+    | '/report'
     | '/api/public/twilio/incoming'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthorityRoute: typeof AuthorityRoute
+  CitizenRoute: typeof CitizenRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
+  MyReportsRoute: typeof MyReportsRoute
   RegisterRoute: typeof RegisterRoute
+  ReportRoute: typeof ReportRoute
   ApiPublicTwilioIncomingRoute: typeof ApiPublicTwilioIncomingRoute
 }
 
@@ -102,6 +154,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/authority': {
+      id: '/authority'
+      path: '/authority'
+      fullPath: '/authority'
+      preLoaderRoute: typeof AuthorityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/citizen': {
+      id: '/citizen'
+      path: '/citizen'
+      fullPath: '/citizen'
+      preLoaderRoute: typeof CitizenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forgot-password': {
@@ -118,11 +184,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/my-reports': {
+      id: '/my-reports'
+      path: '/my-reports'
+      fullPath: '/my-reports'
+      preLoaderRoute: typeof MyReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/register': {
       id: '/register'
       path: '/register'
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/report': {
+      id: '/report'
+      path: '/report'
+      fullPath: '/report'
+      preLoaderRoute: typeof ReportRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/twilio/incoming': {
@@ -137,9 +217,13 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthorityRoute: AuthorityRoute,
+  CitizenRoute: CitizenRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
+  MyReportsRoute: MyReportsRoute,
   RegisterRoute: RegisterRoute,
+  ReportRoute: ReportRoute,
   ApiPublicTwilioIncomingRoute: ApiPublicTwilioIncomingRoute,
 }
 export const routeTree = rootRouteImport
