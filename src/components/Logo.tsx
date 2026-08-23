@@ -14,7 +14,7 @@ export function Logo({
         <img
           src={logoAsset.url}
           alt="Shuraksha logo"
-          className="absolute left-1/2 top-1/2 h-auto w-[340%] max-w-none -translate-x-1/2 -translate-y-[46%]"
+          className="absolute left-1/2 top-1/2 h-auto w-[420%] max-w-none -translate-x-1/2 -translate-y-[41%]"
         />
       </span>
       <span className="leading-none">
