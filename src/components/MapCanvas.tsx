@@ -102,7 +102,7 @@ export default function MapCanvas({
           key={r.id}
           position={[r.location.lat, r.location.lng]}
           icon={dot(SEVERITY_VAR[r.severity], "!", r.severity === "critical" ? 30 : 24)}
-          eventHandlers={onSelectReport ? { click: () => onSelectReport(r.id) } : undefined}
+          eventHandlers={{ click: () => onSelectReport?.(r.id) }}
         >
           <Popup>
             <strong className="capitalize">{r.type}</strong> · {r.severity} ({r.severityScore})
