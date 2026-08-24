@@ -1,8 +1,9 @@
 export type Severity = "low" | "medium" | "high" | "critical";
 export type ReportType = "flood" | "cyclone" | "landslide" | "other";
 export type ReportStatus = "pending" | "assigned" | "en_route" | "resolved";
+export type CitizenStatus = "unknown" | "safe" | "needs_help";
 export type ReportSource = "app" | "sms" | "ivr";
-export type ResourceType = "shelter" | "ndrf" | "supply" | "equipment";
+export type ResourceType = "shelter" | "ndrf" | "supply" | "equipment" | "evacuation";
 export type ResourceStatus = "available" | "deployed" | "depleted";
 export type UserRole = "citizen" | "authority" | "admin";
 
@@ -20,12 +21,15 @@ export interface Report {
   type: ReportType;
   description: string;
   photoUrl?: string;
+  phone?: string;
   severity: Severity;
   severityScore: number;
   hazardType: string;
   peopleAffected: string;
   status: ReportStatus;
+  citizenStatus: CitizenStatus;
   assignedResourceId?: string;
+  assignedEvacuationResourceId?: string;
   createdAt: number;
   updatedAt: number;
 }

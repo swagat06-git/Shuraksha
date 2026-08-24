@@ -50,18 +50,34 @@ function ReportPage() {
   const [busy, setBusy] = useState(false);
 
   function useGps() {
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      toast.error("Location is not available on this device");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setPin({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        toast.success("Location captured");
-      },
-      () => toast.error("Could not read your location — tap the map instead"),
-    );
+  if (typeof navigator === "undefined" || !navigator.geolocation) {
+    toast.error("Geolocation is not supported by this browser");
+    return;
   }
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      console.log("GPS SUCCESS:", pos.coords);
+
+      setPin({
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+      });
+
+      toast.success("Location captured");
+    },
+    (error) => {
+      console.error("GPS ERROR:", error);
+
+      toast.error(`GPS error ${error.code}: ${error.message}`);
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 20000,
+      maximumAge: 60000,
+    },
+  );
+}
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();

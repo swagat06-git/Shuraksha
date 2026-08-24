@@ -14,6 +14,7 @@ import { haversineKm, suggestAllocations } from "@/lib/geo";
 import { useStore } from "@/lib/store";
 import type { GeoPoint, Resource } from "@/lib/types";
 import * as db from "@/services/firebase";
+import { sendSms } from "@/services/sms";
 
 export const Route = createFileRoute("/authority")({
   head: () => ({
@@ -39,10 +40,93 @@ function AuthorityConsole() {
   const critical = openReports.filter((r) => r.severity === "critical").length;
   const dispatched = reports.filter((r) => r.status === "en_route" || r.status === "assigned").length;
 
-  async function confirm(reportId: string, resourceId: string, name: string) {
-    await db.dispatchResource(reportId, resourceId);
-    toast.success("Dispatch confirmed", { description: `${name} is en route.` });
+  function findEvacuationTeam(reportLocation: GeoPoint): Resource | undefined {
+    return resources
+      .filter(
+        (r) =>
+          r.type === "evacuation" &&
+          r.availableCount > 0 &&
+          r.status !== "depleted",
+      )
+      .sort(
+        (a, b) =>
+          haversineKm(reportLocation, a.location) -
+          haversineKm(reportLocation, b.location),
+      )[0];
   }
+
+  async function notifyCitizen(reportId: string) {
+    const report = reports.find((r) => r.id === reportId);
+
+    if (!report) {
+      toast.error("Incident not found");
+      return;
+    }
+
+    if (!report.phone) {
+      toast.error("No citizen phone number is available for this incident");
+      return;
+    }
+
+    try {
+      await sendSms({
+        to: report.phone,
+        message:
+          "Shuraksha: emergency assistance has been assigned to your incident. Please stay in a safe location and keep your phone available.",
+      });
+
+      toast.success("Citizen notification sent");
+    } catch (error) {
+      console.error("[authority] SMS notification error", error);
+      toast.error("Unable to send citizen notification");
+    }
+  }
+
+  async function confirm(
+    reportId: string,
+    resourceId: string,
+    name: string,
+    resourceType: Resource["type"],
+  ) {
+    const report = reports.find((r) => r.id === reportId);
+
+    console.info("[authority] dispatch report", report);
+
+    await db.dispatchResource(reportId, resourceId);
+
+    if (report?.phone) {
+      await sendSms({
+        to: report.phone,
+        message:
+          "Shuraksha: your emergency report has been received and help is on the way. Please stay in a safe location and keep your phone available.",
+      });
+    }
+
+    if (resourceType === "shelter") {
+
+      if (report) {
+        const evacuationTeam = findEvacuationTeam(report.location);
+
+        if (evacuationTeam) {
+          await db.dispatchResource(reportId, evacuationTeam.id);
+
+          toast.success("Camp activated + evacuation team dispatched", {
+            description: `${name} is active. ${evacuationTeam.name} is heading to the affected area.`,
+          });
+          return;
+        }
+      }
+
+      toast.success("Camp activated", {
+        description: `${name} is now active. No evacuation team is currently available.`,
+      });
+    } else {
+      toast.success("Dispatch confirmed", {
+        description: `${name} is en route.`,
+      });
+    }
+  }
+
 
   async function reassign(reportId: string, exclude: string) {
     const report = reports.find((r) => r.id === reportId);
@@ -126,12 +210,49 @@ function AuthorityConsole() {
                           {resource.capacity} available
                         </p>
                       </div>
+                      {resource.type === "shelter" ? (
+                        (() => {
+                          const evacuationTeam = findEvacuationTeam(report.location);
+
+                          return evacuationTeam ? (
+                            <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-3">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">
+                                Evacuation support
+                              </p>
+                              <p className="mt-1 text-sm font-medium">
+                                {evacuationTeam.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {haversineKm(report.location, evacuationTeam.location).toFixed(1)} km
+                                away · {evacuationTeam.availableCount} of{" "}
+                                {evacuationTeam.capacity} available
+                              </p>
+                            </div>
+                          ) : null;
+                        })()
+                      ) : null}
                       <div className="flex flex-wrap gap-2">
                         <Button
                           size="sm"
-                          onClick={() => void confirm(report.id, resource.id, resource.name)}
+                          onClick={() =>
+                            void confirm(
+                              report.id,
+                              resource.id,
+                              resource.name,
+                              resource.type,
+                            )
+                          }
                         >
-                          <CheckCircle2 className="size-4" /> Confirm dispatch
+                          <CheckCircle2 className="size-4" />
+                          {resource.type === "shelter" ? "Activate camp" : "Confirm dispatch"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={!report.phone}
+                          onClick={() => void notifyCitizen(report.id)}
+                        >
+                          Notify Citizen
                         </Button>
                         <Button
                           size="sm"
@@ -153,16 +274,49 @@ function AuthorityConsole() {
             <TabsContent value="reports" className="space-y-3 xl:max-h-[660px] xl:overflow-y-auto xl:pr-1">
               {reports
                 .slice()
-                .sort((a, b) => b.severityScore - a.severityScore)
+                .sort((a, b) => {
+                  const aNeedsHelp = a.citizenStatus === "needs_help" ? 1 : 0;
+                  const bNeedsHelp = b.citizenStatus === "needs_help" ? 1 : 0;
+
+                  if (aNeedsHelp !== bNeedsHelp) {
+                    return bNeedsHelp - aNeedsHelp;
+                  }
+
+                  return b.severityScore - a.severityScore;
+                })
                 .map((r) => (
-                  <Card key={r.id} className="shadow-card">
+                  <Card
+                    key={r.id}
+                    className={`shadow-card ${r.citizenStatus === "needs_help"
+                      ? "border-orange-400 bg-orange-50/50"
+                      : ""
+                      }`}
+                  >
                     <CardContent className="space-y-2 pt-5">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-display text-sm font-semibold capitalize">{r.type}</span>
+
+                        {r.citizenStatus === "needs_help" ? (
+                          <span className="rounded-full bg-orange-100 px-2 py-1 text-xs font-bold text-orange-700">
+                            ⚠ ASSISTANCE REQUESTED
+                          </span>
+                        ) : null}
+
                         <SeverityBadge severity={r.severity} score={r.severityScore} />
                         <StatusBadge status={r.status} className="ml-auto" />
                       </div>
                       <p className="text-sm text-muted-foreground">{r.description}</p>
+
+                      <div className="mt-2 text-xs">
+                        <span className="font-medium text-foreground">Citizen status: </span>
+                        {r.citizenStatus === "safe" ? (
+                          <span className="text-green-600">I'm Safe</span>
+                        ) : r.citizenStatus === "needs_help" ? (
+                          <span className="text-orange-600">Still Needs Help</span>
+                        ) : (
+                          <span className="text-muted-foreground">No response yet</span>
+                        )}
+                      </div>
                       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
                         <span>
                           {r.address} · via {r.source.toUpperCase()} · {r.peopleAffected}
@@ -172,7 +326,7 @@ function AuthorityConsole() {
                             size="sm"
                             variant="ghost"
                             onClick={async () => {
-                              await db.updateReport(r.id, { status: "resolved" });
+                              await db.resolveReport(r.id);
                               toast.success("Marked resolved");
                             }}
                           >
@@ -203,9 +357,8 @@ function Stat({ label, value, tone }: { label: string; value: number; tone?: "cr
       <CardContent className="py-4">
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
         <p
-          className={`mt-1 font-display text-2xl font-bold ${
-            tone === "critical" ? "text-sev-critical" : "text-foreground"
-          }`}
+          className={`mt-1 font-display text-2xl font-bold ${tone === "critical" ? "text-sev-critical" : "text-foreground"
+            }`}
         >
           {value}
         </p>

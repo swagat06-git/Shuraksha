@@ -17,7 +17,9 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as MyReportsRouteImport } from './routes/my-reports'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ReportRouteImport } from './routes/report'
+import { Route as ApiPublicReportsRouteImport } from './routes/api/public/reports'
 import { Route as ApiPublicTwilioIncomingRouteImport } from './routes/api/public/twilio/incoming'
+import { Route as ApiPublicTwilioSendRouteImport } from './routes/api/public/twilio/send'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -59,9 +61,19 @@ const ReportRoute = ReportRouteImport.update({
   path: '/report',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicReportsRoute = ApiPublicReportsRouteImport.update({
+  id: '/api/public/reports',
+  path: '/api/public/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicTwilioIncomingRoute = ApiPublicTwilioIncomingRouteImport.update({
   id: '/api/public/twilio/incoming',
   path: '/api/public/twilio/incoming',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicTwilioSendRoute = ApiPublicTwilioSendRouteImport.update({
+  id: '/api/public/twilio/send',
+  path: '/api/public/twilio/send',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -74,7 +86,9 @@ export interface FileRoutesByFullPath {
   '/my-reports': typeof MyReportsRoute
   '/register': typeof RegisterRoute
   '/report': typeof ReportRoute
+  '/api/public/reports': typeof ApiPublicReportsRoute
   '/api/public/twilio/incoming': typeof ApiPublicTwilioIncomingRoute
+  '/api/public/twilio/send': typeof ApiPublicTwilioSendRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -85,7 +99,9 @@ export interface FileRoutesByTo {
   '/my-reports': typeof MyReportsRoute
   '/register': typeof RegisterRoute
   '/report': typeof ReportRoute
+  '/api/public/reports': typeof ApiPublicReportsRoute
   '/api/public/twilio/incoming': typeof ApiPublicTwilioIncomingRoute
+  '/api/public/twilio/send': typeof ApiPublicTwilioSendRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -97,7 +113,9 @@ export interface FileRoutesById {
   '/my-reports': typeof MyReportsRoute
   '/register': typeof RegisterRoute
   '/report': typeof ReportRoute
+  '/api/public/reports': typeof ApiPublicReportsRoute
   '/api/public/twilio/incoming': typeof ApiPublicTwilioIncomingRoute
+  '/api/public/twilio/send': typeof ApiPublicTwilioSendRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -110,7 +128,9 @@ export interface FileRouteTypes {
     | '/my-reports'
     | '/register'
     | '/report'
+    | '/api/public/reports'
     | '/api/public/twilio/incoming'
+    | '/api/public/twilio/send'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -121,7 +141,9 @@ export interface FileRouteTypes {
     | '/my-reports'
     | '/register'
     | '/report'
+    | '/api/public/reports'
     | '/api/public/twilio/incoming'
+    | '/api/public/twilio/send'
   id:
     | '__root__'
     | '/'
@@ -132,7 +154,9 @@ export interface FileRouteTypes {
     | '/my-reports'
     | '/register'
     | '/report'
+    | '/api/public/reports'
     | '/api/public/twilio/incoming'
+    | '/api/public/twilio/send'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -144,7 +168,9 @@ export interface RootRouteChildren {
   MyReportsRoute: typeof MyReportsRoute
   RegisterRoute: typeof RegisterRoute
   ReportRoute: typeof ReportRoute
+  ApiPublicReportsRoute: typeof ApiPublicReportsRoute
   ApiPublicTwilioIncomingRoute: typeof ApiPublicTwilioIncomingRoute
+  ApiPublicTwilioSendRoute: typeof ApiPublicTwilioSendRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -205,11 +231,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/reports': {
+      id: '/api/public/reports'
+      path: '/api/public/reports'
+      fullPath: '/api/public/reports'
+      preLoaderRoute: typeof ApiPublicReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/twilio/incoming': {
       id: '/api/public/twilio/incoming'
       path: '/api/public/twilio/incoming'
       fullPath: '/api/public/twilio/incoming'
       preLoaderRoute: typeof ApiPublicTwilioIncomingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/twilio/send': {
+      id: '/api/public/twilio/send'
+      path: '/api/public/twilio/send'
+      fullPath: '/api/public/twilio/send'
+      preLoaderRoute: typeof ApiPublicTwilioSendRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -224,7 +264,9 @@ const rootRouteChildren: RootRouteChildren = {
   MyReportsRoute: MyReportsRoute,
   RegisterRoute: RegisterRoute,
   ReportRoute: ReportRoute,
+  ApiPublicReportsRoute: ApiPublicReportsRoute,
   ApiPublicTwilioIncomingRoute: ApiPublicTwilioIncomingRoute,
+  ApiPublicTwilioSendRoute: ApiPublicTwilioSendRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

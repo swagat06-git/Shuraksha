@@ -1,3 +1,4 @@
+import { scoreSeverityWithAI } from "./ai-severity";
 import type { ReportType, Severity } from "./types";
 
 const CRITICAL = ["trapped", "drowning", "swept", "collapsed", "buried", "dead", "missing"];
@@ -41,4 +42,24 @@ export function scoreSeverity(description: string, type: ReportType): SeverityRe
     hazardType: type === "other" ? "unclassified hazard" : type,
     peopleAffected: count ? `~${count} people` : "unknown",
   };
+}
+
+export async function scoreSeverityWithFallback(
+  description: string,
+  type: ReportType,
+): Promise<SeverityResult> {
+  try {
+    return await scoreSeverityWithAI({
+      data: {
+        description,
+        type,
+      },
+    });
+  } catch (error) {
+    console.warn(
+      "AI severity scoring unavailable; using heuristic fallback.",
+      error,
+    );
+    return scoreSeverity(description, type);
+  }
 }

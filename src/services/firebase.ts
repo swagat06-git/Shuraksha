@@ -10,7 +10,7 @@
  * Replace the bodies only — the exported signatures stay identical.
  */
 import { SEED_REPORTS, SEED_RESOURCES } from "@/lib/mock-data";
-import { scoreSeverity } from "@/lib/severity";
+import { scoreSeverityWithFallback } from "@/lib/severity";
 import type { AppUser, Report, Resource, UserRole } from "@/lib/types";
 
 type Listener<T> = (value: T) => void;
@@ -23,7 +23,17 @@ interface DbState {
   resources: Resource[];
 }
 
-let state: DbState = { reports: SEED_REPORTS, resources: SEED_RESOURCES };
+const serverState = globalThis as typeof globalThis & {
+  __shurakshaState?: DbState;
+};
+
+let state: DbState =
+  serverState.__shurakshaState ?? {
+    reports: SEED_REPORTS,
+    resources: SEED_RESOURCES,
+  };
+
+serverState.__shurakshaState = state;
 let hydrated = false;
 
 const reportListeners = new Set<Listener<Report[]>>();
@@ -32,12 +42,24 @@ const authListeners = new Set<Listener<AppUser | null>>();
 
 function hydrate() {
   if (hydrated || typeof window === "undefined") return;
+
   hydrated = true;
+
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (raw) state = JSON.parse(raw) as DbState;
+
+    if (raw) {
+      const localState = JSON.parse(raw) as DbState;
+
+      state = {
+        reports: localState.reports ?? state.reports,
+        resources: localState.resources ?? state.resources,
+      };
+    }
+
+    serverState.__shurakshaState = state;
   } catch {
-    /* keep seed data */
+    /* keep server state */
   }
 }
 
@@ -51,17 +73,47 @@ function persist() {
 }
 
 function emit() {
+  serverState.__shurakshaState = state;
   persist();
+
   reportListeners.forEach((l) => l(state.reports));
   resourceListeners.forEach((l) => l(state.resources));
 }
 
 /* ---------------------------------------------------------------- reports */
+export function getReports(): Report[] {
+  hydrate();
+  return state.reports;
+}
 
 export function subscribeReports(cb: Listener<Report[]>): () => void {
   hydrate();
+
   reportListeners.add(cb);
   cb(state.reports);
+
+  if (typeof window !== "undefined") {
+    void fetch(`/api/public/reports?t=${Date.now()}`, {
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        if (!response.ok) return;
+
+        const reports = (await response.json()) as Report[];
+
+        state = {
+          ...state,
+          reports,
+        };
+
+        persist();
+        cb(state.reports);
+      })
+      .catch(() => {
+        // Keep the existing local state if the server is unavailable.
+      });
+  }
+
   return () => reportListeners.delete(cb);
 }
 
@@ -80,18 +132,20 @@ export interface NewReportInput {
   type: Report["type"];
   description: string;
   photoUrl?: string;
+  phone?: string;
 }
 
 /** Writes the report, then applies severity scoring (the Cloud Function step). */
 export async function createReport(input: NewReportInput): Promise<Report> {
   hydrate();
   const ts = Date.now();
-  const scored = scoreSeverity(input.description, input.type);
+  const scored = await scoreSeverityWithFallback(input.description, input.type);
   const report: Report = {
     id: `rep-${ts}`,
     ...input,
     ...scored,
     status: "pending",
+    citizenStatus: "needs_help",
     createdAt: ts,
     updatedAt: ts,
   };
@@ -121,17 +175,67 @@ export async function updateResource(id: string, patch: Partial<Resource>): Prom
 }
 
 /** Dispatch: consumes one unit of the resource and moves the report to en route. */
-export async function dispatchResource(reportId: string, resourceId: string): Promise<void> {
+export async function dispatchResource(
+  reportId: string,
+  resourceId: string,
+): Promise<void> {
   const resource = state.resources.find((r) => r.id === resourceId);
-  if (!resource) return;
+
+  if (!resource || resource.availableCount <= 0) {
+    return;
+  }
+
   const availableCount = Math.max(0, resource.availableCount - 1);
+
   await updateResource(resourceId, {
     availableCount,
     status: availableCount === 0 ? "depleted" : "deployed",
   });
-  await updateReport(reportId, { status: "en_route", assignedResourceId: resourceId });
+
+  if (resource.type === "evacuation") {
+    await updateReport(reportId, {
+      status: "en_route",
+      assignedEvacuationResourceId: resourceId,
+    });
+  } else {
+    await updateReport(reportId, {
+      status: "en_route",
+      assignedResourceId: resourceId,
+    });
+  }
 }
 
+export async function resolveReport(reportId: string): Promise<void> {
+  const report = state.reports.find((r) => r.id === reportId);
+
+  if (!report) return;
+
+  const resourceIds = [
+    report.assignedResourceId,
+    report.assignedEvacuationResourceId,
+  ].filter((id): id is string => Boolean(id));
+
+  for (const resourceId of resourceIds) {
+    const resource = state.resources.find((r) => r.id === resourceId);
+
+    if (resource) {
+      const availableCount = Math.min(
+        resource.capacity,
+        resource.availableCount + 1,
+      );
+
+      await updateResource(resourceId, {
+        availableCount,
+        status: "available",
+      });
+    }
+  }
+
+  await updateReport(reportId, {
+    status: "resolved",
+    citizenStatus: "safe",
+  });
+}
 export async function resetDemoData(): Promise<void> {
   state = { reports: SEED_REPORTS, resources: SEED_RESOURCES };
   emit();

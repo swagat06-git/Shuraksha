@@ -1,17 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { scoreSeverity } from "@/lib/severity";
+import { createReport } from "@/services/firebase";
 import type { ReportType } from "@/lib/types";
-
-/**
- * Twilio SMS / IVR intake webhook.
- * Point your Twilio number's messaging webhook at:
- *   https://<your-domain>/api/public/twilio/incoming
- *
- * Twilio posts application/x-www-form-urlencoded (Body, From, SpeechResult...).
- * The parsed report is scored and returned as TwiML; wire the persistence call
- * to Firestore where indicated once the backend is connected.
- */
 
 const TYPE_KEYWORDS: Array<[ReportType, string[]]> = [
   ["flood", ["flood", "water", "inundat", "baadh"]],
@@ -21,15 +11,53 @@ const TYPE_KEYWORDS: Array<[ReportType, string[]]> = [
 
 function detectType(text: string): ReportType {
   const lower = text.toLowerCase();
+
   for (const [type, keys] of TYPE_KEYWORDS) {
-    if (keys.some((k) => lower.includes(k))) return type;
+    if (keys.some((key) => lower.includes(key))) {
+      return type;
+    }
   }
+
   return "other";
 }
 
+function extractCoordinates(text: string): { lat: number; lng: number } | null {
+  const match = text.match(
+    /(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/,
+  );
+
+  if (!match) return null;
+
+  const lat = Number(match[1]);
+  const lng = Number(match[2]);
+
+  if (
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lng) ||
+    lat < -90 ||
+    lat > 90 ||
+    lng < -180 ||
+    lng > 180
+  ) {
+    return null;
+  }
+
+  return { lat, lng };
+}
+
 function twiml(message: string): Response {
-  const body = `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${message}</Message></Response>`;
-  return new Response(body, { headers: { "content-type": "application/xml" } });
+  const escaped = message
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+
+  const body = `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${escaped}</Message></Response>`;
+
+  return new Response(body, {
+    headers: { "content-type": "application/xml" },
+  });
 }
 
 export const Route = createFileRoute("/api/public/twilio/incoming")({
@@ -37,34 +65,56 @@ export const Route = createFileRoute("/api/public/twilio/incoming")({
     handlers: {
       POST: async ({ request }) => {
         const form = new URLSearchParams(await request.text());
+
         const from = form.get("From") ?? "";
-        const text = (form.get("Body") ?? form.get("SpeechResult") ?? "").trim();
-        const source = form.get("Body") ? "sms" : "ivr";
+        const text = (
+          form.get("Body") ??
+          form.get("SpeechResult") ??
+          ""
+        ).trim();
 
         if (!text) {
-          return twiml("Shuraksha: we could not read your message. Please resend with details.");
+          return twiml(
+            "Shuraksha: we could not read your message. Please resend with details.",
+          );
+        }
+
+        const location = extractCoordinates(text);
+
+        if (!location) {
+          return twiml(
+            "Shuraksha: please include your location as latitude,longitude. Example: FLOOD 12.9716,77.5946 Water rising inside house.",
+          );
         }
 
         const type = detectType(text);
-        const scored = scoreSeverity(text, type);
+        const source = form.get("Body") ? "sms" : "ivr";
 
-        const report = {
+        const description = text
+          .replace(/-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?/, "")
+          .replace(/^\s*(flood|cyclone|landslide|other)\b\s*/i, "")
+          .trim();
+
+
+        const report = await createReport({
           userId: null,
           source,
-          from,
+          location,
+          address: "Location provided via SMS",
           type,
-          description: text,
-          status: "pending" as const,
-          ...scored,
-          createdAt: Date.now(),
-        };
+          description,
+          phone: from,
+        });
 
-        // TODO(backend): persist `report` to the reports collection, which
-        // triggers the same severity-scoring and allocation flow as the app.
-        console.info("[twilio] incoming report", report);
+        console.info("[twilio] incoming report created", {
+          id: report.id,
+          from,
+          type: report.type,
+          severity: report.severity,
+        });
 
         return twiml(
-          `Shuraksha: report received (${type}, severity ${scored.severity}). A response team has been notified.`,
+          `Shuraksha: report received. Severity ${report.severity}. Your incident has been forwarded to the response team.`,
         );
       },
     },

@@ -28,8 +28,10 @@ const TYPE_PREFERENCE: Record<Report["type"], Resource["type"][]> = {
 /** Allocation engine: score = (1 / distance) * severity_weight, with type affinity. */
 export function suggestAllocations(reports: Report[], resources: Resource[]): Suggestion[] {
   const open = reports.filter(
-    (r) => r.status === "pending" && r.severity !== "low",
-  );
+  (r) =>
+    r.status === "pending" &&
+    (r.severity !== "low" || r.citizenStatus === "needs_help"),
+);
   const available = resources.filter(
     (r) => r.status === "available" && r.availableCount > 0,
   );
@@ -41,10 +43,25 @@ export function suggestAllocations(reports: Report[], resources: Resource[]): Su
       const distanceKm = Math.max(haversineKm(report.location, resource.location), 0.2);
       const prefIndex = TYPE_PREFERENCE[report.type].indexOf(resource.type);
       const affinity = prefIndex === -1 ? 0.5 : 1 - prefIndex * 0.15;
-      const score = (1 / distanceKm) * SEVERITY_WEIGHT[report.severity] * affinity;
+      const helpBoost = report.citizenStatus === "needs_help" ? 1.5 : 1;
+      const score = (1 / distanceKm) * SEVERITY_WEIGHT[report.severity] * affinity * helpBoost;
       if (!best || score > best.score) best = { report, resource, distanceKm, score };
     }
     if (best) suggestions.push(best);
   }
-  return suggestions.sort((a, b) => b.score - a.score);
+  const PRIORITY: Record<Report["severity"], number> = {
+  critical: 4,
+  high: 3,
+  medium: 2,
+  low: 1,
+};
+
+return suggestions.sort((a, b) => {
+  const severityDiff =
+    PRIORITY[b.report.severity] - PRIORITY[a.report.severity];
+
+  if (severityDiff !== 0) return severityDiff;
+
+  return b.score - a.score;
+});
 }

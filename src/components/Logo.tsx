@@ -1,4 +1,4 @@
-import shieldAsset from "@/assets/shuraksha-shield.png.asset.json";
+import shieldAsset from "@/assets/shuraksha-shield.png";
 import { cn } from "@/lib/utils";
 
 export function Logo({
@@ -11,7 +11,7 @@ export function Logo({
   return (
     <span className={cn("flex items-center gap-2.5", className)}>
       <img
-        src={shieldAsset.url}
+        src={shieldAsset}
         alt="Shuraksha shield logo"
         className="size-10 shrink-0 object-contain"
         width={40}

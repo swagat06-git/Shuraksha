@@ -6,6 +6,7 @@ import { SeverityBadge, StatusBadge } from "@/components/SeverityBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useStore } from "@/lib/store";
+import * as db from "@/services/firebase";
 
 export const Route = createFileRoute("/my-reports")({
   head: () => ({
@@ -70,6 +71,44 @@ function MyReports() {
                       <StatusBadge status={r.status} className="ml-auto" />
                     </div>
                     <p className="mt-2 text-sm text-muted-foreground">{r.description}</p>
+
+                    <div className="rounded-lg border bg-muted/30 px-3 py-3 text-xs">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-medium text-foreground">Citizen status:</span>
+
+                        {r.citizenStatus === "safe" ? (
+                          <span className="font-semibold text-green-600">I'm Safe</span>
+                        ) : r.citizenStatus === "needs_help" ? (
+                          <span className="font-semibold text-orange-600">Still Needs Help</span>
+                        ) : (
+                          <span className="text-muted-foreground">No response yet</span>
+                        )}
+                      </div>
+
+                      {r.status !== "resolved" ? (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={async () => {
+                              await db.updateReport(r.id, { citizenStatus: "safe" });
+                            }}
+                          >
+                            I'm Safe
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={async () => {
+                              await db.updateReport(r.id, { citizenStatus: "needs_help" });
+                            }}
+                          >
+                            Still Need Help
+                          </Button>
+                        </div>
+                      ) : null}
+                    </div>
                     {r.photoUrl ? (
                       <img
                         src={r.photoUrl}
@@ -97,6 +136,33 @@ function MyReports() {
                         <dd>{resource ? resource.name : "Awaiting dispatch"}</dd>
                       </div>
                     </dl>
+                    {r.status !== "resolved" ? (
+                      <div className="mt-4 flex flex-wrap items-center gap-2 border-t pt-4">
+                        <span className="text-xs font-medium text-muted-foreground">
+                          Your status:
+                        </span>
+
+                        <Button
+                          size="sm"
+                          variant={r.citizenStatus === "safe" ? "default" : "outline"}
+                          onClick={async () => {
+                            await db.updateReport(r.id, { citizenStatus: "safe" });
+                          }}
+                        >
+                          I'm Safe
+                        </Button>
+
+                        <Button
+                          size="sm"
+                          variant={r.citizenStatus === "needs_help" ? "destructive" : "outline"}
+                          onClick={async () => {
+                            await db.updateReport(r.id, { citizenStatus: "needs_help" });
+                          }}
+                        >
+                          I Still Need Help
+                        </Button>
+                      </div>
+                    ) : null}
                   </CardContent>
                 </Card>
               </li>
