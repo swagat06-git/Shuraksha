@@ -63,14 +63,21 @@ function AuthorityConsole() {
       return;
     }
 
-    if (!report.phone) {
-      toast.error("No citizen phone number is available for this incident");
+    if (!report.userId) {
+      toast.error("No citizen is linked to this incident");
       return;
     }
 
     try {
+      const phone = await db.getUserPhone(report.userId);
+
+      if (!phone) {
+        toast.error("No phone number is saved for this citizen");
+        return;
+      }
+
       await sendSms({
-        to: report.phone,
+        to: phone,
         message:
           "Shuraksha: emergency assistance has been assigned to your incident. Please stay in a safe location and keep your phone available.",
       });
@@ -249,7 +256,7 @@ function AuthorityConsole() {
                         <Button
                           size="sm"
                           variant="outline"
-                          disabled={!report.phone}
+                          disabled={!report.userId}
                           onClick={() => void notifyCitizen(report.id)}
                         >
                           Notify Citizen
@@ -306,6 +313,17 @@ function AuthorityConsole() {
                         <StatusBadge status={r.status} className="ml-auto" />
                       </div>
                       <p className="text-sm text-muted-foreground">{r.description}</p>
+
+                      {r.photoUrl ? (
+                        <div className="overflow-hidden rounded-xl border border-border">
+                          <img
+                            src={r.photoUrl}
+                            alt="Incident scene"
+                            className="max-h-80 w-full object-cover"
+                            loading="lazy"
+                          />
+                        </div>
+                      ) : null}
 
                       <div className="mt-2 text-xs">
                         <span className="font-medium text-foreground">Citizen status: </span>

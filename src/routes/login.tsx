@@ -1,10 +1,17 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Eye, EyeOff } from "lucide-react";
 
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,9 +22,16 @@ export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       { title: "Sign in — Shuraksha" },
-      { name: "description", content: "Sign in to Shuraksha to report incidents or coordinate response resources." },
+      {
+        name: "description",
+        content:
+          "Sign in to Shuraksha to report incidents or coordinate response resources.",
+      },
       { property: "og:title", content: "Sign in — Shuraksha" },
-      { property: "og:description", content: "Access the Shuraksha citizen app or authority console." },
+      {
+        property: "og:description",
+        content: "Access the Shuraksha citizen app or authority console.",
+      },
     ],
   }),
   component: LoginPage,
@@ -25,17 +39,32 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const navigate = useNavigate();
+
   const [role, setRole] = useState<UserRole>("citizen");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
 
   async function go(user: Promise<unknown>) {
     setBusy(true);
+
     try {
       await user;
+
       toast.success("Signed in");
-      navigate({ to: role === "authority" ? "/authority" : "/citizen" });
+
+      navigate({
+        to: role === "authority" ? "/authority" : "/citizen",
+      });
+    } catch (error) {
+      console.error("Sign-in failed:", error);
+
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Sign-in failed.",
+      );
     } finally {
       setBusy(false);
     }
@@ -48,14 +77,31 @@ function LoginPage() {
           <Link to="/" className="mb-2">
             <Logo showTagline />
           </Link>
-          <CardTitle className="font-display text-2xl">Welcome back</CardTitle>
-          <CardDescription>Sign in to continue to your response console.</CardDescription>
+
+          <CardTitle className="font-display text-2xl">
+            Welcome back
+          </CardTitle>
+
+          <CardDescription>
+            Sign in to continue to your response console.
+          </CardDescription>
         </CardHeader>
+
         <CardContent className="space-y-5">
-          <Tabs value={role} onValueChange={(v) => setRole(v as UserRole)}>
+          <Tabs
+            value={role}
+            onValueChange={(value) => {
+              setRole(value as UserRole);
+            }}
+          >
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="citizen">Citizen</TabsTrigger>
-              <TabsTrigger value="authority">Authority</TabsTrigger>
+              <TabsTrigger value="citizen">
+                Citizen
+              </TabsTrigger>
+
+              <TabsTrigger value="authority">
+                Authority
+              </TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -63,11 +109,21 @@ function LoginPage() {
             className="space-y-4"
             onSubmit={(e) => {
               e.preventDefault();
-              void go(db.signIn(email || `demo.${role}@shuraksha.in`, role));
+
+              void go(
+                db.signIn(
+                  email,
+                  password,
+                  role,
+                ),
+              );
             }}
           >
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">
+                Email
+              </Label>
+
               <Input
                 id="email"
                 type="email"
@@ -75,44 +131,67 @@ function LoginPage() {
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={busy}
               />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link to="/forgot-password" className="text-xs font-medium text-primary hover:underline">
+                <Label htmlFor="password">
+                  Password
+                </Label>
+
+                <Link
+                  to="/forgot-password"
+                  className="text-xs font-medium text-primary hover:underline"
+                >
                   Forgot password?
                 </Link>
               </div>
-              <Input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={busy}
+                  className="pr-10"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((current) => !current)}
+                  disabled={busy}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <Eye className="size-4" />
+                  ) : (
+                    <EyeOff className="size-4" />
+                  )}
+                </button>
+              </div>
             </div>
-            <Button type="submit" className="w-full" disabled={busy}>
-              Sign in as {role}
+
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={busy}
+            >
+              {busy
+                ? "Signing in..."
+                : `Sign in as ${role}`}
             </Button>
           </form>
 
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
-          </div>
-
-          <Button
-            variant="outline"
-            className="w-full"
-            disabled={busy}
-            onClick={() => void go(db.signInWithGoogle(role))}
-          >
-            Continue with Google
-          </Button>
-
           <p className="text-center text-sm text-muted-foreground">
             New here?{" "}
-            <Link to="/register" className="font-medium text-primary hover:underline">
+            <Link
+              to="/register"
+              className="font-medium text-primary hover:underline"
+            >
               Create an account
             </Link>
           </p>

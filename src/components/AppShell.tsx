@@ -8,6 +8,10 @@ import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import * as db from "@/services/firebase";
 
+const PUBLIC_NAV = [
+  { to: "/citizen", label: "Dashboard" },
+] as const;
+
 const CITIZEN_NAV = [
   { to: "/citizen", label: "Dashboard" },
   { to: "/report", label: "Report incident" },
@@ -23,9 +27,17 @@ export function AppShell({ children, fullBleed = false }: { children: ReactNode;
   const { user } = useStore();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const nav = user?.role === "authority" ? AUTHORITY_NAV : CITIZEN_NAV;
+  const nav = user
+    ? user.role === "authority"
+      ? AUTHORITY_NAV
+      : CITIZEN_NAV
+    : PUBLIC_NAV;
 
   async function handleSignOut() {
+    const confirmed = window.confirm("Are you sure you want to sign out?");
+
+    if (!confirmed) return;
+
     await db.signOut();
     navigate({ to: "/", replace: true });
   }
@@ -66,9 +78,6 @@ export function AppShell({ children, fullBleed = false }: { children: ReactNode;
               <>
                 <Button asChild variant="ghost" size="sm">
                   <Link to="/login">Sign in</Link>
-                </Button>
-                <Button asChild size="sm">
-                  <Link to="/report">Report now</Link>
                 </Button>
               </>
             )}

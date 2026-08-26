@@ -18,6 +18,7 @@ import { Route as MyReportsRouteImport } from './routes/my-reports'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ReportRouteImport } from './routes/report'
 import { Route as ApiPublicReportsRouteImport } from './routes/api/public/reports'
+import { Route as ApiPublicResourcesRouteImport } from './routes/api/public/resources'
 import { Route as ApiPublicTwilioIncomingRouteImport } from './routes/api/public/twilio/incoming'
 import { Route as ApiPublicTwilioSendRouteImport } from './routes/api/public/twilio/send'
 
@@ -66,6 +67,11 @@ const ApiPublicReportsRoute = ApiPublicReportsRouteImport.update({
   path: '/api/public/reports',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicResourcesRoute = ApiPublicResourcesRouteImport.update({
+  id: '/api/public/resources',
+  path: '/api/public/resources',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicTwilioIncomingRoute = ApiPublicTwilioIncomingRouteImport.update({
   id: '/api/public/twilio/incoming',
   path: '/api/public/twilio/incoming',
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/report': typeof ReportRoute
   '/api/public/reports': typeof ApiPublicReportsRoute
+  '/api/public/resources': typeof ApiPublicResourcesRoute
   '/api/public/twilio/incoming': typeof ApiPublicTwilioIncomingRoute
   '/api/public/twilio/send': typeof ApiPublicTwilioSendRoute
 }
@@ -100,6 +107,7 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/report': typeof ReportRoute
   '/api/public/reports': typeof ApiPublicReportsRoute
+  '/api/public/resources': typeof ApiPublicResourcesRoute
   '/api/public/twilio/incoming': typeof ApiPublicTwilioIncomingRoute
   '/api/public/twilio/send': typeof ApiPublicTwilioSendRoute
 }
@@ -114,6 +122,7 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/report': typeof ReportRoute
   '/api/public/reports': typeof ApiPublicReportsRoute
+  '/api/public/resources': typeof ApiPublicResourcesRoute
   '/api/public/twilio/incoming': typeof ApiPublicTwilioIncomingRoute
   '/api/public/twilio/send': typeof ApiPublicTwilioSendRoute
 }
@@ -129,6 +138,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/report'
     | '/api/public/reports'
+    | '/api/public/resources'
     | '/api/public/twilio/incoming'
     | '/api/public/twilio/send'
   fileRoutesByTo: FileRoutesByTo
@@ -142,6 +152,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/report'
     | '/api/public/reports'
+    | '/api/public/resources'
     | '/api/public/twilio/incoming'
     | '/api/public/twilio/send'
   id:
@@ -155,6 +166,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/report'
     | '/api/public/reports'
+    | '/api/public/resources'
     | '/api/public/twilio/incoming'
     | '/api/public/twilio/send'
   fileRoutesById: FileRoutesById
@@ -169,6 +181,7 @@ export interface RootRouteChildren {
   RegisterRoute: typeof RegisterRoute
   ReportRoute: typeof ReportRoute
   ApiPublicReportsRoute: typeof ApiPublicReportsRoute
+  ApiPublicResourcesRoute: typeof ApiPublicResourcesRoute
   ApiPublicTwilioIncomingRoute: typeof ApiPublicTwilioIncomingRoute
   ApiPublicTwilioSendRoute: typeof ApiPublicTwilioSendRoute
 }
@@ -238,6 +251,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/resources': {
+      id: '/api/public/resources'
+      path: '/api/public/resources'
+      fullPath: '/api/public/resources'
+      preLoaderRoute: typeof ApiPublicResourcesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/twilio/incoming': {
       id: '/api/public/twilio/incoming'
       path: '/api/public/twilio/incoming'
@@ -265,6 +285,7 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterRoute: RegisterRoute,
   ReportRoute: ReportRoute,
   ApiPublicReportsRoute: ApiPublicReportsRoute,
+  ApiPublicResourcesRoute: ApiPublicResourcesRoute,
   ApiPublicTwilioIncomingRoute: ApiPublicTwilioIncomingRoute,
   ApiPublicTwilioSendRoute: ApiPublicTwilioSendRoute,
 }

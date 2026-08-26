@@ -27,11 +27,7 @@ const TYPE_PREFERENCE: Record<Report["type"], Resource["type"][]> = {
 
 /** Allocation engine: score = (1 / distance) * severity_weight, with type affinity. */
 export function suggestAllocations(reports: Report[], resources: Resource[]): Suggestion[] {
-  const open = reports.filter(
-  (r) =>
-    r.status === "pending" &&
-    (r.severity !== "low" || r.citizenStatus === "needs_help"),
-);
+  const open = reports.filter((r) => r.status === "pending");
   const available = resources.filter(
     (r) => r.status === "available" && r.availableCount > 0,
   );

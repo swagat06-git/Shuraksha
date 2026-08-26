@@ -3,10 +3,9 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import "leaflet.heat";
 import { useEffect } from "react";
-import { MapContainer, Marker, Circle, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
 
 import { CENTER } from "@/lib/mock-data";
-import { IMD_DANGER_ZONES } from "@/lib/imd";
 import type { GeoPoint, Report, Resource } from "@/lib/types";
 
 const SEVERITY_VAR: Record<Report["severity"], string> = {
@@ -165,30 +164,6 @@ export default function MapCanvas({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <IncidentHeatmap reports={reports} />
-      {IMD_DANGER_ZONES.map((zone) => {
-        return (
-          <Circle
-            key={zone.district}
-            center={zone.center}
-            radius={zone.radiusKm * 1500}
-            pathOptions={{
-              color: "var(--sev-high)",
-              fillColor: "var(--sev-high)",
-              fillOpacity: 0.12,
-              weight: 2,
-              dashArray: "8 6",
-            }}
-          >
-            <Popup>
-              <strong>IMD Alert Zone</strong>
-              <br />
-              District: {zone.district}
-              <br />
-              Heavy Rain · Alert
-            </Popup>
-          </Circle>
-        );
-      })}
 
       <SizeFix />
 

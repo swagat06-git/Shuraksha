@@ -14,6 +14,7 @@ import { AppShell } from "@/components/AppShell";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -66,6 +67,7 @@ const STEPS = [
 ];
 
 function Landing() {
+  const { user } = useStore();
   return (
     <AppShell>
       <section className="relative overflow-hidden rounded-3xl border border-border bg-navy px-6 py-14 shadow-card md:px-12 md:py-20">
@@ -90,18 +92,11 @@ function Landing() {
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg" variant="destructive" className="font-semibold">
-              <Link to="/report">
+              <Link to={user ? "/report" : "/login"}>
                 Report an incident <ArrowRight className="size-4" />
               </Link>
             </Button>
-            <Button
-              asChild
-              size="lg"
-              variant="outline"
-              className="border-navy-foreground/30 bg-navy-foreground/10 text-navy-foreground hover:bg-navy-foreground/20 hover:text-navy-foreground"
-            >
-              <Link to="/authority">Open authority console</Link>
-            </Button>
+
           </div>
         </div>
       </section>

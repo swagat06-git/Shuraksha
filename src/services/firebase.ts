@@ -9,8 +9,25 @@
  *
  * Replace the bodies only — the exported signatures stay identical.
  */
+
+import { auth, db } from "@/services/firebase-client";
+
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut as firebaseSignOut,
+  GoogleAuthProvider,
+  signInWithPopup,
+} from "firebase/auth";
+
+
+
+import { doc, getDoc, setDoc } from "firebase/firestore";
+
 import { SEED_REPORTS, SEED_RESOURCES } from "@/lib/mock-data";
+
 import { scoreSeverityWithFallback } from "@/lib/severity";
+
 import type { AppUser, Report, Resource, UserRole } from "@/lib/types";
 
 type Listener<T> = (value: T) => void;
@@ -103,7 +120,7 @@ export function subscribeReports(cb: Listener<Report[]>): () => void {
 
         state = {
           ...state,
-          reports,
+          reports: reports.length > 0 ? reports : SEED_REPORTS,
         };
 
         persist();
@@ -119,8 +136,32 @@ export function subscribeReports(cb: Listener<Report[]>): () => void {
 
 export function subscribeResources(cb: Listener<Resource[]>): () => void {
   hydrate();
+
   resourceListeners.add(cb);
   cb(state.resources);
+
+  if (typeof window !== "undefined") {
+    void fetch(`/api/public/resources?t=${Date.now()}`, {
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        if (!response.ok) return;
+
+        const resources = (await response.json()) as Resource[];
+
+        state = {
+          ...state,
+          resources,
+        };
+
+        persist();
+        cb(state.resources);
+      })
+      .catch(() => {
+        // Keep the existing local state if the server is unavailable.
+      });
+  }
+
   return () => resourceListeners.delete(cb);
 }
 
@@ -131,46 +172,167 @@ export interface NewReportInput {
   address: string;
   type: Report["type"];
   description: string;
-  photoUrl?: string;
+  photoFile?: File;
   phone?: string;
 }
 
 /** Writes the report, then applies severity scoring (the Cloud Function step). */
 export async function createReport(input: NewReportInput): Promise<Report> {
   hydrate();
+
   const ts = Date.now();
-  const scored = await scoreSeverityWithFallback(input.description, input.type);
+
+  const scored = await scoreSeverityWithFallback(
+    input.description,
+    input.type,
+  );
+
+  const { photoFile, ...reportInput } = input;
+
   const report: Report = {
     id: `rep-${ts}`,
-    ...input,
+    ...reportInput,
     ...scored,
     status: "pending",
     citizenStatus: "needs_help",
     createdAt: ts,
     updatedAt: ts,
   };
-  state = { ...state, reports: [report, ...state.reports] };
+
+  if (typeof window !== "undefined") {
+    const currentUser = auth.currentUser;
+
+    if (!currentUser) {
+      throw new Error("You must be signed in to submit a report.");
+    }
+
+    const idToken = await currentUser.getIdToken();
+
+    const formData = new FormData();
+
+    formData.append("report", JSON.stringify(report));
+
+    if (photoFile) {
+      formData.append("photo", photoFile);
+    }
+
+    const response = await fetch("/api/public/reports", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to save report to the server.");
+    }
+
+    const savedReport = (await response.json()) as Report;
+
+    state = {
+      ...state,
+      reports: [savedReport, ...state.reports],
+    };
+
+    persist();
+    emit();
+
+    return savedReport;
+  }
+
+  state = {
+    ...state,
+    reports: [report, ...state.reports],
+  };
+
   emit();
+
   return report;
 }
 
-export async function updateReport(id: string, patch: Partial<Report>): Promise<void> {
+export async function updateReport(
+  id: string,
+  patch: Partial<Report>,
+): Promise<void> {
+  const updatedAt = Date.now();
+
+  if (typeof window !== "undefined") {
+    const currentUser = auth.currentUser;
+
+    if (!currentUser) {
+      throw new Error("You must be signed in to update a report.");
+    }
+
+    const idToken = await currentUser.getIdToken();
+
+    const response = await fetch("/api/public/reports", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: JSON.stringify({
+        id,
+        patch,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to update report on the server.");
+    }
+  }
+
   state = {
     ...state,
     reports: state.reports.map((r) =>
-      r.id === id ? { ...r, ...patch, updatedAt: Date.now() } : r,
+      r.id === id ? { ...r, ...patch, updatedAt } : r,
     ),
   };
+
   emit();
 }
-
 /* -------------------------------------------------------------- resources */
 
-export async function updateResource(id: string, patch: Partial<Resource>): Promise<void> {
+export async function updateResource(
+  id: string,
+  patch: Partial<Resource>,
+): Promise<void> {
+  if (typeof window !== "undefined") {
+    const currentUser = auth.currentUser;
+
+    if (!currentUser) {
+      throw new Error("You must be signed in to update a resource.");
+    }
+
+    const idToken = await currentUser.getIdToken();
+
+    const response = await fetch("/api/public/resources", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: JSON.stringify({
+        id,
+        patch,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to update resource on the server.");
+    }
+  }
+
+  const updatedAt = Date.now();
+
   state = {
     ...state,
-    resources: state.resources.map((r) => (r.id === id ? { ...r, ...patch } : r)),
+    resources: state.resources.map((r) =>
+      r.id === id ? { ...r, ...patch, updatedAt } : r,
+    ),
   };
+
   emit();
 }
 
@@ -267,29 +429,126 @@ function setUser(user: AppUser | null) {
   authListeners.forEach((l) => l(user));
 }
 
-export async function signIn(email: string, role: UserRole): Promise<AppUser> {
+
+
+export async function signIn(
+  email: string,
+  password: string,
+  role: UserRole,
+): Promise<AppUser> {
+  const credential = await signInWithEmailAndPassword(auth, email, password);
+  const firebaseUser = credential.user;
+
+  const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+
+  const storedRole = userDoc.exists()
+    ? (userDoc.data()["role"] as UserRole)
+    : role;
+
+  const displayName =
+    userDoc.exists() && typeof userDoc.data()["displayName"] === "string"
+      ? userDoc.data()["displayName"]
+      : firebaseUser.displayName || email.split("@")[0] || "User";
+
   const user: AppUser = {
-    uid: `usr-${role}`,
-    email,
-    role,
-    displayName: email.split("@")[0] || "User",
+    uid: firebaseUser.uid,
+    email: firebaseUser.email || email,
+    role: storedRole,
+    displayName,
   };
+
   setUser(user);
   return user;
 }
 
 export async function signUp(
   email: string,
+  password: string,
   displayName: string,
   role: UserRole,
+  phone: string,
 ): Promise<AppUser> {
-  const user: AppUser = { uid: `usr-${role}`, email, role, displayName };
+  const credential = await createUserWithEmailAndPassword(
+    auth,
+    email,
+    password,
+  );
+
+  const firebaseUser = credential.user;
+
+  const user: AppUser = {
+    uid: firebaseUser.uid,
+    email: firebaseUser.email || email,
+    role,
+    displayName,
+  };
+
+  await setDoc(doc(db, "users", firebaseUser.uid), {
+    email: user.email,
+    displayName: user.displayName,
+    role: user.role,
+    phone: phone.trim(),
+    createdAt: Date.now(),
+  });
+
   setUser(user);
   return user;
 }
 
-export async function signInWithGoogle(role: UserRole): Promise<AppUser> {
-  return signIn(`demo.${role}@shuraksha.in`, role);
+export async function getUserPhone(userId: string): Promise<string | null> {
+  if (!userId) return null;
+
+  const userDoc = await getDoc(doc(db, "users", userId));
+
+  if (!userDoc.exists()) {
+    return null;
+  }
+
+  const phone = userDoc.data()["phone"];
+
+  return typeof phone === "string" && phone.trim()
+    ? phone.trim()
+    : null;
+}
+
+export async function signInWithGoogle(
+  role: UserRole,
+): Promise<AppUser> {
+  const provider = new GoogleAuthProvider();
+  const credential = await signInWithPopup(auth, provider);
+  const firebaseUser = credential.user;
+
+  const userRef = doc(db, "users", firebaseUser.uid);
+  const userDoc = await getDoc(userRef);
+
+  const storedRole = userDoc.exists()
+    ? (userDoc.data()["role"] as UserRole)
+    : role;
+
+  const displayName =
+    userDoc.exists() &&
+      typeof userDoc.data()["displayName"] === "string"
+      ? userDoc.data()["displayName"]
+      : firebaseUser.displayName || "User";
+
+  const user: AppUser = {
+    uid: firebaseUser.uid,
+    email: firebaseUser.email || "",
+    role: storedRole,
+    displayName,
+  };
+
+  if (!userDoc.exists()) {
+    await setDoc(userRef, {
+      email: user.email,
+      displayName: user.displayName,
+      role: user.role,
+      createdAt: Date.now(),
+    });
+  }
+
+  setUser(user);
+  return user;
 }
 
 export async function signOut(): Promise<void> {

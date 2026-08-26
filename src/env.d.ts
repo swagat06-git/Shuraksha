@@ -5,6 +5,7 @@ declare namespace NodeJS {
     TWILIO_PHONE_NUMBER?: string;
     TWILIO_TEST_TO?: string;
     TWILIO_TRIAL_TEMPLATE?: string;
+    TWILIO_SOS_TO?: string;
 
     GEMINI_API_KEY?: string;
   }
@@ -23,4 +24,12 @@ interface ImportMetaEnv {
 
 interface ImportMeta {
   readonly env: ImportMetaEnv;
+}
+
+declare namespace NodeJS {
+  interface ProcessEnv {
+    FIREBASE_PROJECT_ID: string;
+    FIREBASE_CLIENT_EMAIL: string;
+    FIREBASE_PRIVATE_KEY: string;
+  }
 }

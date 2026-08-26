@@ -45,39 +45,39 @@ function ReportPage() {
   const [type, setType] = useState<ReportType>("flood");
   const [address, setAddress] = useState("");
   const [description, setDescription] = useState("");
-  const [photoUrl, setPhotoUrl] = useState<string | undefined>(undefined);
+  const [photoFile, setPhotoFile] = useState<File | undefined>(undefined);
   const [photoName, setPhotoName] = useState("");
   const [busy, setBusy] = useState(false);
 
   function useGps() {
-  if (typeof navigator === "undefined" || !navigator.geolocation) {
-    toast.error("Geolocation is not supported by this browser");
-    return;
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      toast.error("Geolocation is not supported by this browser");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        console.log("GPS SUCCESS:", pos.coords);
+
+        setPin({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        });
+
+        toast.success("Location captured");
+      },
+      (error) => {
+        console.error("GPS ERROR:", error);
+
+        toast.error(`GPS error ${error.code}: ${error.message}`);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 20000,
+        maximumAge: 60000,
+      },
+    );
   }
-
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      console.log("GPS SUCCESS:", pos.coords);
-
-      setPin({
-        lat: pos.coords.latitude,
-        lng: pos.coords.longitude,
-      });
-
-      toast.success("Location captured");
-    },
-    (error) => {
-      console.error("GPS ERROR:", error);
-
-      toast.error(`GPS error ${error.code}: ${error.message}`);
-    },
-    {
-      enableHighAccuracy: true,
-      timeout: 20000,
-      maximumAge: 60000,
-    },
-  );
-}
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -98,7 +98,7 @@ function ReportPage() {
         address: address.trim() || `${pin.lat.toFixed(4)}, ${pin.lng.toFixed(4)}`,
         type,
         description: description.trim(),
-        ...(photoUrl ? { photoUrl } : {}),
+        ...(photoFile ? { photoFile } : {}),
       });
       toast.success(`Report submitted — severity ${report.severity.toUpperCase()}`, {
         description: "Response teams have been notified.",
@@ -195,8 +195,9 @@ function ReportPage() {
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
+
                     setPhotoName(file.name);
-                    setPhotoUrl(URL.createObjectURL(file));
+                    setPhotoFile(file);
                   }}
                 />
               </div>
