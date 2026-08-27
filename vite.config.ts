@@ -7,9 +7,21 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
+  // Fixes Vercel 404/deployment routing safely without breaking Lovable's preview
+  nitro: process.env['VERCEL'] ? true : false,
+
   tanstackStart: {
-    // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-    // nitro/vite builds from this
-    server: { entry: "server" },
+    server: {
+      entry: "server",
+    },
   },
+
+  // Fixes the "__dirname is not defined in ES Modules" crash from your external packages
+  vite: {
+    define: {
+      '__dirname': '""',
+      '__filename': '""',
+    }
+  }
 });
+
