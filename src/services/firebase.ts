@@ -436,19 +436,46 @@ export async function signIn(
   password: string,
   role: UserRole,
 ): Promise<AppUser> {
-  const credential = await signInWithEmailAndPassword(auth, email, password);
+  const credential = await signInWithEmailAndPassword(
+    auth,
+    email,
+    password,
+  );
+
   const firebaseUser = credential.user;
 
-  const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+  const userDoc = await getDoc(
+    doc(db, "users", firebaseUser.uid),
+  );
 
-  const storedRole = userDoc.exists()
-    ? (userDoc.data()["role"] as UserRole)
-    : role;
+  // A valid application user must have a Firestore profile.
+  if (!userDoc.exists()) {
+    await firebaseSignOut(auth);
+    throw new Error(
+      "Your account profile could not be found. Please contact support.",
+    );
+  }
+
+  const data = userDoc.data();
+  const storedRole = data["role"] as UserRole;
+
+  // IMPORTANT:
+  // The role selected on the login screen must match
+  // the role stored against the authenticated account.
+  if (storedRole !== role) {
+    await firebaseSignOut(auth);
+
+    throw new Error(
+      `This account is registered as ${storedRole}. Please select ${storedRole} to sign in.`,
+    );
+  }
 
   const displayName =
-    userDoc.exists() && typeof userDoc.data()["displayName"] === "string"
-      ? userDoc.data()["displayName"]
-      : firebaseUser.displayName || email.split("@")[0] || "User";
+    typeof data["displayName"] === "string"
+      ? data["displayName"]
+      : firebaseUser.displayName ||
+        email.split("@")[0] ||
+        "User";
 
   const user: AppUser = {
     uid: firebaseUser.uid,
@@ -458,6 +485,7 @@ export async function signIn(
   };
 
   setUser(user);
+
   return user;
 }
 

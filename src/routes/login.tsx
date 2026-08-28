@@ -15,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { UserRole } from "@/lib/types";
+import type { AppUser, UserRole } from "@/lib/types";
 import * as db from "@/services/firebase";
 
 export const Route = createFileRoute("/login")({
@@ -46,29 +46,32 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  async function go(user: Promise<unknown>) {
-    setBusy(true);
+  async function go(userPromise: Promise<AppUser>) {
+  setBusy(true);
 
-    try {
-      await user;
+  try {
+    const authenticatedUser = await userPromise;
 
-      toast.success("Signed in");
+    toast.success("Signed in");
 
-      navigate({
-        to: role === "authority" ? "/authority" : "/citizen",
-      });
-    } catch (error) {
-      console.error("Sign-in failed:", error);
+    navigate({
+      to:
+        authenticatedUser.role === "authority"
+          ? "/authority"
+          : "/citizen",
+    });
+  } catch (error) {
+    console.error("Sign-in failed:", error);
 
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Sign-in failed.",
-      );
-    } finally {
-      setBusy(false);
-    }
+    toast.error(
+      error instanceof Error
+        ? error.message
+        : "Sign-in failed.",
+    );
+  } finally {
+    setBusy(false);
   }
+}
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted px-4 py-10">
