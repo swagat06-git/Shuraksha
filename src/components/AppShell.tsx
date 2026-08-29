@@ -20,7 +20,7 @@ const CITIZEN_NAV = [
 
 const AUTHORITY_NAV = [
   { to: "/authority", label: "Operations" },
-  { to: "/citizen", label: "Live incidents" },
+  
 ] as const;
 
 export function AppShell({ children, fullBleed = false }: { children: ReactNode; fullBleed?: boolean }) {
