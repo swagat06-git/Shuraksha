@@ -162,7 +162,7 @@ function AuthorityConsole() {
               Live incidents, resource readiness and allocation suggestions.
             </p>
           </div>
-          <Button
+          {/* <Button
             variant="outline"
             size="sm"
             onClick={async () => {
@@ -171,7 +171,7 @@ function AuthorityConsole() {
             }}
           >
             <RotateCcw className="size-4" /> Reset demo data
-          </Button>
+          </Button> */}
         </div>
 
         <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
