@@ -8,6 +8,22 @@ The platform focuses on **floods, cyclones, landslides, fires, and other emergen
 
 ---
 
+#  Vercel Deployment Link
+[🚀 Live Demo](https://my-app.vercel.app)
+
+#  Demo Credentials
+
+Citizen
+1. democitizen1@shuraksha.demo(password democitizen)
+2. democitizen2@shuraksha.demo(password democitizen2)
+3. democitizen3@shuraksha.demo(password democitizen3)
+
+Authority
+demo.authority@shuraksha.demo(password demoauthority)
+
+
+
+
 ##  Problem
 
 During disasters, emergency response teams often face several challenges:
@@ -110,12 +126,6 @@ Resources can be tracked based on availability, capacity, location, and deployme
 - Manage response resources.
 - Coordinate emergency operations.
 
-### Admin
-
-- Manage the platform.
-- Manage users and system data.
-- Oversee emergency-response operations.
-
 ---
 
 ##  Disaster Management Workflow
@@ -190,7 +200,7 @@ Incident Resolution
 - TanStack Router
 - Tailwind CSS
 - Lucide Icons
-- Map-based visualization
+- Map-based visualization(Openstreetmap)
 
 ### Backend & Services
 
@@ -202,9 +212,8 @@ Incident Resolution
 
 ### API
 
-- FastAPI
-- Uvicorn
-- Pydantic
+-Gemin
+-Twilio
 
 ### Deployment
 
@@ -224,9 +233,6 @@ Shuraksha/
 │   ├── services/
 │   └── ...
 │
-├── ml_api/
-│   ├── app.py
-│   └── requirements.txt
 │
 ├── public/
 │
@@ -280,11 +286,9 @@ Planned improvements include:
 -  SMS-based incident reporting
 -  IVR-based emergency reporting
 -  Advanced disaster mapping
--  Automated resource recommendations
 -  Real-time shelter availability
 -  Advanced authority analytics
 -  Real-time emergency notifications
--  Improved image-based incident assessment
 -  Weather and disaster-risk integration
 -  Scalable production infrastructure
 
