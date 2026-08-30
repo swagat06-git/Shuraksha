@@ -9,7 +9,7 @@ The platform focuses on **floods, cyclones, landslides, fires, and other emergen
 ---
 
 #  Vercel Deployment Link
-[🚀 Live Demo](https://my-app.vercel.app)
+[https://shuraksha-sih.vercel.app](https://shuraksha-sih.vercel.app)
 
 #  Demo Credentials
 
